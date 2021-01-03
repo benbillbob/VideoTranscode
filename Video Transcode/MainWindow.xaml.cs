@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using Xabe.FFmpeg;
 
 namespace Video_Transcode
 {
@@ -22,7 +24,7 @@ namespace Video_Transcode
 		List<string> SourceFiles { get; }
 		List<string> ProcessOutput { get; }
 
-		const string FFMPEG_PATH = "C:\\aaa\\ffmpeg\\bin\\ffmpeg.exe";
+		const string FFMPEG_PATH = "C:\\aaa\\ffmpeg\\bin\\";
 
 		private async void Start_Click(object sender, RoutedEventArgs e)
 		{
@@ -47,6 +49,34 @@ namespace Video_Transcode
 					process.BeginOutputReadLine();
 				}
 			}
+		}
+
+		private async void Start2_Click(object sender, RoutedEventArgs e)
+		{
+			FFmpeg.SetExecutablesPath(FFMPEG_PATH);
+
+			foreach (var sourceFile in SourceFiles)
+			{
+				string outputFileName = Path.Combine(Path.GetDirectoryName(sourceFile), $"{Path.GetFileNameWithoutExtension(sourceFile)}x{nameof(VideoSize.Hd1080)}{Path.GetExtension(sourceFile)}");
+				string res = "1080";
+				//var conversion = await FFmpeg.Conversions.FromSnippet.ChangeSize(sourceFile, outputFileName, VideoSize.Hd1080);
+				var conversion = FFmpeg.Conversions.New();
+				//conversion.SetOverwriteOutput(true);
+				conversion.OnProgress += Conversion_OnProgress;
+				conversion.OnDataReceived += Conversion_OnDataReceived;
+				await conversion.Start($"-y -vsync 0 -hwaccel cuda -hwaccel_output_format cuda -i \"{sourceFile}\" -vf scale_cuda=-1:{res} -c:a copy -c:v h264_nvenc -b:v 5M \"{outputFileName}\"");
+				Debug.WriteLine($"Finished converion file [{sourceFile}]");
+			}
+		}
+
+		private void Conversion_OnDataReceived(object sender, DataReceivedEventArgs e)
+		{
+			Debug.WriteLine(e.Data);
+		}
+
+		private void Conversion_OnProgress(object sender, Xabe.FFmpeg.Events.ConversionProgressEventArgs args)
+		{
+			Debug.WriteLine($"Percent Complete - {args.Percent}");
 		}
 	}
 }
