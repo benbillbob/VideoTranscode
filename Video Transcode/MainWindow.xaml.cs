@@ -16,7 +16,8 @@ namespace Video_Transcode
 		{
 			InitializeComponent();
 			SourceFiles = new List<string>();
-			SourceFiles.Add("c:\\aaa\\DJI_0052.MP4");
+			var files = Directory.GetFiles("\\\\10.1.1.10\\Natalie\\NetworkStore\\From Camera\\Mid Year concert 2024\\", "*.mp4", SearchOption.AllDirectories);
+			SourceFiles.AddRange(files);
 
 			ProcessOutput = new List<string>();
 		}
@@ -57,13 +58,15 @@ namespace Video_Transcode
 
 			foreach (var sourceFile in SourceFiles)
 			{
-				string outputFileName = Path.Combine(Path.GetDirectoryName(sourceFile), $"{Path.GetFileNameWithoutExtension(sourceFile)}x{nameof(VideoSize.Hd1080)}{Path.GetExtension(sourceFile)}");
+				string outputFileName = Path.Combine(Path.GetDirectoryName(sourceFile), $"{Path.GetFileNameWithoutExtension(sourceFile)}x{nameof(VideoSize.Hd1080)}.mp4");// {Path.GetExtension(sourceFile)}");
 				string res = "1080";
 				//var conversion = await FFmpeg.Conversions.FromSnippet.ChangeSize(sourceFile, outputFileName, VideoSize.Hd1080);
 				var conversion = FFmpeg.Conversions.New();
 				//conversion.SetOverwriteOutput(true);
 				conversion.OnProgress += Conversion_OnProgress;
 				conversion.OnDataReceived += Conversion_OnDataReceived;
+				//await conversion.Start($"-i \"{sourceFile}\" -c copy \"{outputFileName}\"");
+				//await conversion.Start($"-y -vsync 0 -hwaccel cuda -hwaccel_output_format cuda -i \"{sourceFile}\" -vf scale_cuda=-1:{res} -c:a copy -c:v h264_nvenc -b:v 5M \"{outputFileName}\"");
 				await conversion.Start($"-y -vsync 0 -hwaccel cuda -hwaccel_output_format cuda -i \"{sourceFile}\" -vf scale_cuda=-1:{res} -c:a copy -c:v h264_nvenc -b:v 5M \"{outputFileName}\"");
 				Debug.WriteLine($"Finished converion file [{sourceFile}]");
 			}
